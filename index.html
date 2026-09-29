@@ -1,0 +1,30 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="referrer" content="strict-origin-when-cross-origin">
+<title>Trailer</title>
+<style>html, body { margin: 0; height: 100%; background: #000; overflow: hidden } iframe { border: 0; width: 100%; height: 100% }</style>
+</head>
+<body>
+<script>
+// YouTube refuses embeds from a page without a web address (error 153): a TV app shows this page instead,
+// which embeds the player and relays its messages both ways.
+const id = new URLSearchParams(location.search).get('v') || ''
+if (/^[\w-]{11}$/.test(id)) {
+  const player = document.createElement('iframe')
+  player.src = 'https://www.youtube.com/embed/' + id + '?enablejsapi=1&autoplay=1&rel=0&playsinline=1&origin=' + encodeURIComponent(location.origin)
+  player.allow = 'autoplay; encrypted-media'
+  player.referrerPolicy = 'strict-origin-when-cross-origin'
+  player.onload = () => player.contentWindow.postMessage(JSON.stringify({ event: 'listening', id: 1 }), '*')
+  addEventListener('message', (e) => {
+    if (e.source === player.contentWindow) parent.postMessage({ youtube: e.data }, '*')
+    else if (e.source === parent && typeof e.data === 'string') player.contentWindow.postMessage(e.data, '*')
+  })
+  document.body.appendChild(player)
+} else {
+  parent.postMessage({ youtube: JSON.stringify({ event: 'onError', info: 'invalid id' }) }, '*')
+}
+</script>
+</body>
+</html>
